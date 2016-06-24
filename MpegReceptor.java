@@ -30,22 +30,31 @@ public class MpegReceptor {
 	}
 	
 	public static void mpegTS(BufferedReader buff) throws IOException{
-	/** Sync Byte do cabecalho da Transport Packet --- o Sync Byte possui um valor fixo de 0x47 H(71 D)*/		
+	/** Sync Byte do cabecalho da Transport Packet --- o Sync Byte possui um valor fixo de 0x47 H(71 D)*/
+		int bytes;
+		String data;
 		do{
-			transportPacket(buff);
-		}while(buff.read() == 71);
+			bytes = buff.read();
+			while(bytes == 255){
+				bytes = buff.read();
+			}
+			if(bytes == 71){
+				data = "Sync_Byte: " + String.format("%X", bytes) + "\n"; /** Exibe em Hexadecimal*/
+				transportPacket(buff, data);
+			}
+		}while(buff.ready());
 		
 	}
 	
-	public static void transportPacket(BufferedReader buff) throws IOException{
-		String data = "Transport Stream Packet Layer\n\n";
+	public static void transportPacket(BufferedReader buff, String syncByte) throws IOException{
+		String data = "Transport Stream Packet Layer\n\n" + syncByte;
 		int bytes = 0;
 		int bitMSB = 0;
 		int adpFieldC;
 		
 		/**Sync Byte --- 1 byte*/
-		bytes = buff.read();
-		data += "Sync_Byte: " + String.format("%X", bytes) + "\n"; /** Exibe em Hexadecimal*/
+		//bytes = buff.read();
+		//data += "Sync_Byte: " + String.format("%X", bytes) + "\n"; /** Exibe em Hexadecimal*/
 		
 		/**Transport error indicator --- 1 bit*/
 		bytes = buff.read();
