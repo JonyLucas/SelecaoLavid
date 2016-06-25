@@ -226,7 +226,7 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		assoSection += "CRC Section: " + String.format("%X", bitMSB) + "\n";
+		assoSection += "CRC Section: " + String.format("%X\n", bitMSB);
 		
 		return assoSection;
 		
@@ -316,7 +316,7 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		mapSection += "CRC Section: " + bitMSB + "\n";
+		mapSection += "CRC Section: " + String.format("%X\n", bitMSB);
 		
 		return mapSection;
 		
