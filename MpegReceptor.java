@@ -32,13 +32,14 @@ public class MpegReceptor {
 		String data;
 		do{
 			bytes = buff.read();
-			while(bytes == 255){
+			while(bytes == 255){ /**Depois de obter os dados do Service Information do pacote de transporte, os valores seguintes são "FF" Hexa (255 Dec)*/
 				bytes = buff.read();
 			}
-			if(bytes == 71){
+			if(bytes == 71){ /**Valor definido do Sync Byte (0x47)*/
 				data = "Sync_Byte: " + String.format("%X", bytes) + "\n"; /** Exibe em Hexadecimal*/
 				transportPacket(buff, data);
 			}
+
 		}while(buff.ready());
 		
 	}
@@ -225,7 +226,7 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		assoSection += "CRC Section: " + bitMSB + "\n";
+		assoSection += "CRC Section: " + String.format("%X", bitMSB) + "\n";
 		
 		return assoSection;
 		
@@ -394,13 +395,13 @@ public class MpegReceptor {
 				adpField += "Program clock reference base: " + bitMSB + "\n";
 				
 				/**Reserved --- 6 bits ---> Nao sera exibido*/
-				/**Program clock reference --- 9 bits*/
+				/**Program clock reference base extension --- 9 bits*/
 				bitMSB = bytes;
 				bitMSB = (bitMSB & 1);
 				bytes = buff.read();
 				bitMSB <<=1;
 				bitMSB = (bitMSB | bytes);
-				adpField += "Program clock reference: " + bitMSB + "\n";
+				adpField += "Program clock reference base extension: " + bitMSB + "\n";
 								
 			}
 			
