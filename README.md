@@ -1,6 +1,8 @@
 # SelecaoLavid
 Código fonte do projeto: MpegReceptor.java
+
 Descrição: Projeto que exibe informações em janela dos metadados obtidos a partir dos pacotes de Stream do arquivo video.ts.
+
 Desenvolvido por: João Lucas Fabião Amorim
 
 OBS: Utilizei o arquivo "MPEG-2 TS packet analyser.exe" como base para entender o fluxo do arquivo .ts e verificar se os valores apresentados no programa estavam certos.
@@ -33,3 +35,4 @@ mpegTS:
   
 transportPacket:
   
+  O método transportPacket...
