@@ -1,5 +1,3 @@
-package projetolavid;
-
 public class No {
 
 	private int conteudo;
