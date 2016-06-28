@@ -1,5 +1,3 @@
-package projetolavid;
-
 import javax.swing.JOptionPane;
 import java.io.*;
 
@@ -12,7 +10,7 @@ public class MpegReceptor {
 	public static void main(String[] args) {
 		
 		try{
-			String dir = JOptionPane.showInputDialog(null, "Digite o diretório do arquivo");
+			String dir = JOptionPane.showInputDialog(null, "Digite o diretÃ³rio do arquivo");
 			FileReader file = new FileReader(dir); /**Localizacao do arquivo .ts*/
 			BufferedReader arq = new BufferedReader(file);
 	
@@ -37,7 +35,7 @@ public class MpegReceptor {
 		String data;
 		do{
 			bytes = buff.read();
-			while(bytes != 71){ /**O laço loopa até encontrar o Sync Byte (71 em decimal / 0x47 em hexadecimal) que delimita o inicio do pacote do pacote TS*/
+			while(bytes != 71){ /**O laÃ§o loopa atÃ© encontrar o Sync Byte (71 em decimal / 0x47 em hexadecimal) que delimita o inicio do pacote do pacote TS*/
 				bytes = buff.read();
 			}
 			if(bytes == 71){ /**Valor definido do Sync Byte (0x47)*/				
@@ -54,7 +52,7 @@ public class MpegReceptor {
 		String data = "Transport Stream Packet Layer\n\n" + syncByte;
 		int bytes = 0, bitMSB = 0; //MSB => Most Significant bit
 		int adpFieldC, PID;
-		boolean hasPID; /**Verifica se o PID ja foi exibido, caso afirmativo, não o exibe novamente*/
+		boolean hasPID; /**Verifica se o PID ja foi exibido, caso afirmativo, nÃ£o o exibe novamente*/
 		
 		/**Transport error indicator --- 1 bit*/
 		bytes = buff.read();
@@ -141,9 +139,9 @@ public class MpegReceptor {
 			data += "Data byte: " + bytes + "\n";
 			
 			if(PID == 0){
-				data += programAssociationSection(buff, PMT); /**Trecho com informações da tabela PAT*/
+				data += programAssociationSection(buff, PMT); /**Trecho com informaÃ§Ãµes da tabela PAT*/
 			}else if(PMT == PID){
-				data += programMapSection(buff); /**Trecho com informações da tabela PMT*/
+				data += programMapSection(buff); /**Trecho com informaÃ§Ãµes da tabela PMT*/
 			}
 		}
 		
