@@ -3,9 +3,30 @@ package projetolavid;
 import javax.swing.JOptionPane;
 import java.io.*;
 
-/**Esta classe é essencialmente a mesma do MpegReceptorTxt, só que é apenas para exibição em janela e possui estrutura de dados do tipo lista*/
 
 public class MpegReceptor {	
+	
+	public static void main(String[] args) {
+		
+		try{
+			/**d://Programação//Atividade Lavid//video.ts*/
+			String dir = JOptionPane.showInputDialog(null, "Digite o diretório do arquivo");
+			FileReader file = new FileReader(dir); /**Localizacao do arquivo .ts*/
+			BufferedReader arq = new BufferedReader(file);
+	
+			MpegReceptor.mpegTS(arq);
+			
+			arq.close();
+			file.close();
+			
+		}catch(FileNotFoundException fnf){
+			System.out.println("Arquivo nao encontrado");
+		}catch(IOException ioe){
+			ioe.printStackTrace();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
 	
 	static Lista pids; /**Estrutura de dados da classe (Lista.java) para armazenar os PIDs lidos, para exibi-los apenas uma vez*/
 	
