@@ -1,15 +1,19 @@
 package projetolavid;
 
 import javax.swing.JOptionPane;
-
 import java.io.*;
 
-public class MpegReceptor {
+public class MpegReceptor {	
+	
+	static Lista pids; /**Estrutura de dados da classe (Lista.java) para armazenar os PIDs lidos, para exibi-los apenas uma vez*/
 	
 	public static void main(String[] args) {
 		
 		try{
-			FileReader file = new FileReader("d:\\Programação\\Atividade Lavid\\video.ts"); /**Localizacao do arquivo .ts*/
+			/**d://Programação//Atividade Lavid//video.ts*/
+			String dir = JOptionPane.showInputDialog(null, "Digite o diretório do arquivo");
+			int op = Integer.parseInt(JOptionPane.showInputDialog(null, "Informe como deseja exibir os pacotes: \n(1) -  Exibição em janela \n(2) - Exibição em arquivo .txt"));
+			FileReader file = new FileReader(dir); /**Localizacao do arquivo .ts*/
 			BufferedReader arq = new BufferedReader(file);
 			
 			mpegTS(arq);
@@ -28,6 +32,7 @@ public class MpegReceptor {
 	
 	public static void mpegTS(BufferedReader buff) throws IOException{
 	/** Sync Byte do cabecalho da Transport Packet --- o Sync Byte possui um valor fixo de 0x47 H(71 D)*/
+		pids = new Lista();
 		int bytes;
 		String data;
 		do{
@@ -46,13 +51,9 @@ public class MpegReceptor {
 	
 	public static void transportPacket(BufferedReader buff, String syncByte) throws IOException{
 		String data = "Transport Stream Packet Layer\n\n" + syncByte;
-		int bytes = 0;
-		int bitMSB = 0; //MSB => Most Significant bit
+		int bytes = 0, bitMSB = 0; //MSB => Most Significant bit
 		int adpFieldC, PID;
-		
-		/**Sync Byte --- 1 byte*/
-		//bytes = buff.read();
-		//data += "Sync_Byte: " + String.format("%X", bytes) + "\n"; /** Exibe em Hexadecimal*/
+		boolean hasPID; /**Verifica se o PID ja foi exibido, caso afirmativo, não o exibe novamente*/
 		
 		/**Transport error indicator --- 1 bit*/
 		bytes = buff.read();
@@ -79,6 +80,14 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		PID = bitMSB = (bitMSB | bytes);
 		data += "PID: " + bitMSB; /** PID Ocupa os 5 bits restantes mais o byte seguinte*/
+		
+		if(pids.hasElement(bitMSB)){
+			hasPID = true;
+		}
+		else{
+			hasPID = false;
+			pids.insere(PID);
+		}
 		
 		if(PID == 0){
 			data += " - Program Association Table (PAT)\n";
@@ -137,7 +146,9 @@ public class MpegReceptor {
 			}
 		}
 		
-		JOptionPane.showMessageDialog(null, data);
+		if(!hasPID){
+			JOptionPane.showMessageDialog(null, data);
+		}
 	}
 	
 	public static String programAssociationSection(BufferedReader buff) throws IOException{
