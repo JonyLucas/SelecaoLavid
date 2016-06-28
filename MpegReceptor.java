@@ -2,7 +2,7 @@ import javax.swing.JOptionPane;
 import java.io.*;
 
 
-public class MpegReceptorX {	
+public class MpegReceptor {	
 	
 	static int PMT;
 	
