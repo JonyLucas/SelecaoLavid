@@ -10,7 +10,7 @@ public class MpegReceptor {
 	public static void main(String[] args) {
 		
 		try{
-			String dir = JOptionPane.showInputDialog(null, "Digite o diretório do arquivo");
+			String dir = JOptionPane.showInputDialog(null, "Digite o diretorio do arquivo");
 			FileReader file = new FileReader(dir); /**Localizacao do arquivo .ts*/
 			BufferedReader arq = new BufferedReader(file);
 	
