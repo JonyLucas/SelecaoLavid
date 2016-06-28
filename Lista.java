@@ -1,5 +1,3 @@
-package projetolavid;
-
 public class Lista {
 
 	private No cabeca;
