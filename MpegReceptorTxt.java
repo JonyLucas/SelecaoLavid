@@ -1,17 +1,15 @@
 package projetolavid;
 
-import javax.swing.JOptionPane;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
 
-/**Esta classe é essencialmente a mesma do MpegReceptorTxt, só que é apenas para exibição em janela e possui estrutura de dados do tipo lista*/
+/**Esta classe é essencialmente a mesma do MpegReceptor, só que é apenas para escrita em arquivo .txt e não possui nenhuma estrutura de dados*/
 
-public class MpegReceptor {	
+public class MpegReceptorTxt {
 	
-	static Lista pids; /**Estrutura de dados da classe (Lista.java) para armazenar os PIDs lidos, para exibi-los apenas uma vez*/
-	
-	public static void mpegTS(BufferedReader buff) throws IOException{
+	public static void mpegTS(BufferedReader buff, PrintWriter pw) throws IOException{
 	/** Sync Byte do cabecalho da Transport Packet --- o Sync Byte possui um valor fixo de 0x47 H(71 D)*/
-		pids = new Lista();
 		int bytes;
 		String data;
 		do{
@@ -22,37 +20,36 @@ public class MpegReceptor {
 			if(bytes == 71){ /**Valor definido do Sync Byte (0x47)*/
 				
 				data = "Sync_Byte: " + String.format("%X", bytes) + "\n"; /** Exibe em Hexadecimal*/
-				transportPacket(buff, data);
-
+				transportPacket(buff, pw, data);
 			}
 
 		}while(buff.ready());
 		
 	}
 	
-	public static void transportPacket(BufferedReader buff, String syncByte) throws IOException{
-		String data = "Transport Stream Packet Layer\n\n" + syncByte;
+	public static void transportPacket(BufferedReader buff, PrintWriter pw, String syncByte) throws IOException{
+		pw.println("Transport Stream Packet Layer\n\n" + syncByte);
+		pw.println(); /**Espaçamento*/
 		int bytes = 0, bitMSB = 0; //MSB => Most Significant bit
 		int adpFieldC, PID;
-		boolean hasPID; /**Verifica se o PID ja foi exibido, caso afirmativo, não o exibe novamente*/
 		
 		/**Transport error indicator --- 1 bit*/
 		bytes = buff.read();
 		bitMSB = bytes;
 		bitMSB >>>= 7;
-		data += "Transport error indicator: " + bitMSB + "\n"; /** Ocupa o bit mais a esquerda (MSB) do byte lido, entao desloca-se o byte 7 casas a direita sem sinal (unsigned right shift)*/
+		pw.println("Transport error indicator: " + bitMSB + "\n"); /** Ocupa o bit mais a esquerda (MSB) do byte lido, entao desloca-se o byte 7 casas a direita sem sinal (unsigned right shift)*/
 		
 		/**Payload unit start indicator --- 1 bit*/
 		bitMSB = bytes;
 		bitMSB >>>=6;
 		bitMSB = (bitMSB & 1);
-		data += "Playload unit start indicator: " + bitMSB + "\n"; /** Ocupa o segundo bit do byte lido, deve-se deslocar 6 casas a direita e utilizar o operando & com o numero 1 para manter apenas o bit mais a direita*/
+		pw.println("Playload unit start indicator: " + bitMSB + "\n"); /** Ocupa o segundo bit do byte lido, deve-se deslocar 6 casas a direita e utilizar o operando & com o numero 1 para manter apenas o bit mais a direita*/
 		
 		/**Transport Priority --- 1 bit*/
 		bitMSB = bytes;
 		bitMSB >>>=5;
 		bitMSB = (bitMSB & 1);
-		data += "Transport Priority: " + bitMSB + "\n"; /** Ocupa o terceiro bit do byte lido, deve-se deslocar 5 casas a direita e utilizar o operando & com o numero 1 para manter apenas o bit mais a direita*/
+		pw.println("Transport Priority: " + bitMSB + "\n"); /** Ocupa o terceiro bit do byte lido, deve-se deslocar 5 casas a direita e utilizar o operando & com o numero 1 para manter apenas o bit mais a direita*/
 		
 		/**PID --- 13 bits*/
 		bitMSB = bytes;
@@ -60,92 +57,84 @@ public class MpegReceptor {
 		bytes = buff.read();
 		bitMSB <<= 8;
 		PID = bitMSB = (bitMSB | bytes);
-		data += "PID: " + bitMSB; /** PID Ocupa os 5 bits restantes mais o byte seguinte*/
-		
-		if(pids.hasElement(bitMSB)){
-			hasPID = true;
-		}
-		else{
-			hasPID = false;
-			pids.insere(PID);
-		}
+		pw.print("PID: " + bitMSB); /** PID Ocupa os 5 bits restantes mais o byte seguinte*/
 		
 		if(PID == 0){
-			data += " - Program Association Table (PAT)\n";
+			pw.println(" - Program Association Table (PAT)\n");
 		}else if(PID == 1){
-			data += " - Conditional Acess Table (CAT)\n";
+			pw.println(" - Conditional Acess Table (CAT)\n");
 		}else if(PID == 2){
-			data += " - Transport Stream Description Table (TSDT)\n";
+			pw.println(" - Transport Stream Description Table (TSDT)\n");
 		}else if(PID >= 3 && bitMSB <= 15){
-			data += " - Reserved\n";
+			pw.println(" - Reserved\n");
 		}else if(PID >= 16 && bitMSB <= 8190){
-			data += " - Other porpuses\n";
+			pw.println(" - Other porpuses\n");
 		}else{
-			data += " - Null packet\n";
+			pw.println(" - Null packet\n");
 		}
 		
 		/**Transport Scrambling control --- 2 bits*/
 		bytes = buff.read();
 		bitMSB = bytes;
 		bitMSB >>>=6;
-		data += "Transport Scrambling control: " + bitMSB + "\n"; /** Ocupa dois bits do byte lido, entao desloca-se 6 bits para a direita*/
+		pw.println("Transport Scrambling control: " + bitMSB + "\n"); /** Ocupa dois bits do byte lido, entao desloca-se 6 bits para a direita*/
 		
 		/**Adaptation field control --- 2 bits*/
 		bitMSB = bytes;
 		bitMSB >>>= 4;
 		adpFieldC = bitMSB = (bitMSB & 3);
-		data += "Adaptation field control: " + bitMSB + "\n"; /**Ocupa dois bits do byte lido, desloca-se 4 bits para a direita e entao utiliza-se operacao &(and) com o numero 3 para considerar apenas os dois bits mais a direita*/
+		pw.println("Adaptation field control: " + bitMSB + "\n"); /**Ocupa dois bits do byte lido, desloca-se 4 bits para a direita e entao utiliza-se operacao &(and) com o numero 3 para considerar apenas os dois bits mais a direita*/
 		
 		if(adpFieldC == 0){
-			data += "Reserved for future use by ISO/IEC\n";
+			pw.println("Reserved for future use by ISO/IEC\n");
 		}else if(adpFieldC == 1){
-			data += "No adaptation field, payload only\n";
+			pw.println("No adaptation field, payload only\n");
 		}else if(adpFieldC == 2){
-			data += "Adaptation field only, no payload\n";
+			pw.println("Adaptation field only, no payload\n");
 		}else{
-			data += "Adaptation field followed by payload\n";
+			pw.println("Adaptation field followed by payload\n");
 		}
 		
 		/**Continuity counter --- 4 bits*/
 		bitMSB = bytes;
 		bitMSB = (bitMSB & 15);
-		data += "Continuity counter: " + bitMSB + "\n"; /**Ocupa os 4 bits restantes do byte, entao utiliza-se a operacao and para manter os 4 bits mais a direita*/
+		pw.println("Continuity counter: " + bitMSB + "\n"); /**Ocupa os 4 bits restantes do byte, entao utiliza-se a operacao and para manter os 4 bits mais a direita*/
 		
 		if(adpFieldC == 2 || adpFieldC == 3){
-			data += adaptationField(buff);
+			adaptationField(buff, pw);
 		}
 		
 		/**Data byte --- 1 byte*/
 		if(adpFieldC == 1 || adpFieldC == 3){
 			bytes = buff.read();
-			data += "Data byte: " + bytes + "\n";
+			pw.println("Data byte: " + bytes + "\n");
 			
 			if(PID == 0){
-				data += programAssociationSection(buff);
+				programAssociationSection(buff, pw);
 			}else if(PID >= 16 && PID <= 8190){
-				data += programMapSection(buff);
+				programMapSection(buff, pw);
 			}
 		}
 		
-		if(!hasPID){
-			JOptionPane.showMessageDialog(null, data);
-		}
+		pw.println("-----------------------------------------------------");
+		pw.println();
 	}
 	
-	public static String programAssociationSection(BufferedReader buff) throws IOException{
-		String assoSection = "\nProgram Association Section\n\n";
+	public static void programAssociationSection(BufferedReader buff, PrintWriter pw) throws IOException{
+		pw.println("\nProgram Association Section\n\n");
+		pw.println(); /**Espaçamento*/
 		int bitMSB = 0;
 		int bytes;
 		
 		/**Table ID --- 1 byte ---> 0x00*/
 		bytes = buff.read();
-		assoSection += "Table ID: " + bytes + "\n";
+		pw.println("Table ID: " + bytes + "\n");
 		
 		/**Section syntax indicator --- 1 bit*/
 		bytes = buff.read();
 		bitMSB = bytes;
 		bitMSB >>>= 7;
-		assoSection += "Section syntax indicator: " + bitMSB + "\n";
+		pw.println("Section syntax indicator: " + bitMSB + "\n");
 		
 		/**'0' e reserved nao serao exibidos --- 3 bits*/
 		/**Section Lenght --- 12 bits*/
@@ -154,7 +143,7 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		assoSection += "Section Lenght: " + bitMSB + "\n";
+		pw.println("Section Lenght: " + bitMSB + "\n");
 		
 		/**Transport Stream ID --- 2 bytes*/
 		bytes = buff.read();
@@ -162,27 +151,27 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		assoSection += "Transport Stream ID: " + bitMSB + "\n";
+		pw.println("Transport Stream ID: " + bitMSB + "\n");
 		
 		/**Reserved --- 2 bits -> nao sera exibido*/
 		/**Version number --- 5 bits*/
 		bytes = buff.read();
 		bitMSB >>>= 1;
 		bitMSB = (bitMSB & 31);
-		assoSection += "Version number: " + bitMSB + "\n";
+		pw.println("Version number: " + bitMSB + "\n");
 		
 		/**Current next indicator --- 1 bit*/
 		bitMSB = bytes;
 		bitMSB = (bitMSB & 1);
-		assoSection += "Current next indicator: " + ((bitMSB == 1) ? "True" : "False") + "\n";
+		pw.println("Current next indicator: " + ((bitMSB == 1) ? "True" : "False") + "\n");
 		
 		/**Section number --- 1 byte*/
 		bytes = buff.read();
-		assoSection += "Section number: " + bytes + "\n";
+		pw.println("Section number: " + bytes + "\n");
 		
 		/**Last section number --- 1 byte*/
 		bytes = buff.read();
-		assoSection += "Last Section number: " + bytes + "\n";
+		pw.println("Last Section number: " + bytes + "\n");
 		
 		/**Program number --- 2 bytes*/
 		bytes = buff.read();
@@ -190,7 +179,7 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		assoSection += "Program Number: " + bitMSB + "\n";
+		pw.println("Program Number: " + bitMSB + "\n");
 		
 		/**Reserved --- 3 bits --- Nao sera exibido*/
 		/**Program Map PID || Program Network PID --- 13 bits*/
@@ -201,9 +190,9 @@ public class MpegReceptor {
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
 		if(bitMSB == 0){
-			assoSection += "Program Network PID: " + bitMSB + "\n";
+			pw.println("Program Network PID: " + bitMSB + "\n");
 		}else{
-			assoSection += "Program Map PID: " + bitMSB + "\n";
+			pw.println("Program Map PID: " + bitMSB + "\n");
 		}
 		
 		/**CRC 32 --- 32 bits -> 4 bytes*/
@@ -218,26 +207,25 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		assoSection += "CRC Section: " + String.format("%X\n", bitMSB);
-		
-		return assoSection;
+		pw.println("CRC Section: " + String.format("%X\n", bitMSB));
 		
 	}
 	
-	public static String programMapSection(BufferedReader buff) throws IOException{
-		String mapSection = "\nProgram Map Section\n\n";
+	public static void programMapSection(BufferedReader buff, PrintWriter pw) throws IOException{
+		pw.println("\nProgram Map Section\n\n");
+		pw.println();
 		int bitMSB = 0;
 		int bytes;
 		
 		/**Table ID --- 1 byte*/
 		bytes = buff.read();
-		mapSection += "Table ID: " + bytes + "\n";
+		pw.println("Table ID: " + bytes + "\n");
 		
 		/**Section syntax indicator --- 1 bit*/
 		bytes = buff.read();
 		bitMSB = bytes;
 		bitMSB >>>= 7;
-		mapSection += "Section syntax indicator: " + bitMSB + "\n";
+		pw.println("Section syntax indicator: " + bitMSB + "\n");
 		
 		/**'0' e reserved nao serao exibidos --- 3 bits*/
 		/**Section Lenght --- 12 bits*/
@@ -246,7 +234,7 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		mapSection += "Section Lenght: " + bitMSB + "\n";
+		pw.println("Section Lenght: " + bitMSB + "\n");
 		
 		/**Program Number --- 2 bytes*/
 		bytes = buff.read();
@@ -254,27 +242,27 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		mapSection += "Program number: " + bitMSB + "\n";
+		pw.println("Program number: " + bitMSB + "\n");
 		
 		/**Reserved --- 2 bits -> nao sera exibido*/
 		/**Version number --- 5 bits*/
 		bytes = buff.read();
 		bitMSB >>>= 1;
 		bitMSB = (bitMSB & 31);
-		mapSection += "Version number: " + bitMSB + "\n";
+		pw.println("Version number: " + bitMSB + "\n");
 		
 		/**Current next indicator --- 1 bit*/
 		bitMSB = bytes;
 		bitMSB = (bitMSB & 1);
-		mapSection += "Current next indicator: " + ((bitMSB == 1) ? "True" : "False") + "\n";
+		pw.println("Current next indicator: " + ((bitMSB == 1) ? "True" : "False") + "\n");
 		
 		/**Section number --- 1 byte*/
 		bytes = buff.read();
-		mapSection += "Section number: " + bytes + "\n";
+		pw.println("Section number: " + bytes + "\n");
 		
 		/**Last section number --- 1 byte*/
 		bytes = buff.read();
-		mapSection += "Last Section number: " + bytes + "\n";
+		pw.println("Last Section number: " + bytes + "\n");
 		
 		/**Reserved --- 3 bits --- Nao sera exibido*/
 		/**PCR PID --- 13 bits*/
@@ -284,7 +272,7 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		mapSection += "PCR PID: " + bitMSB + "\n";
+		pw.println("PCR PID: " + bitMSB + "\n");
 		
 		/**Reserved --- 4 bits --- Nao sera exibido*/
 		/**Program info lenght --- 12 bits*/
@@ -294,7 +282,7 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		mapSection += "Program info lenght: " + bitMSB + "\n";
+		pw.println("Program info lenght: " + bitMSB + "\n");
 		
 		/**CRC 32 --- 32 bits -> 4 bytes*/
 		bytes = buff.read();
@@ -308,67 +296,66 @@ public class MpegReceptor {
 		bitMSB <<= 8;
 		bytes = buff.read();
 		bitMSB = (bitMSB | bytes);
-		mapSection += "CRC Section: " + String.format("%X\n", bitMSB);
-		
-		return mapSection;
+		pw.println("CRC Section: " + String.format("%X\n", bitMSB));
 		
 	}
 	
 	
-	public static String adaptationField(BufferedReader buff) throws IOException{
-		String adpField =  "\nAdaptation Field\n\n";
+	public static void adaptationField(BufferedReader buff, PrintWriter pw) throws IOException{
+		pw.println("\nAdaptation Field\n\n");
+		pw.println();
 		int bytes, bitMSB, pcrFlag, oPcrFlag, splicingPF, privDataF, adpFieldExF;
 		
 		/**Adaptation Field Lenght --- 1 byte*/
 		bytes = buff.read();
-		adpField += "Adptation Field Lenght: " + bytes + "\n";
+		pw.println("Adptation Field Lenght: " + bytes + "\n");
 		if(bytes > 0){
 			/**Discontinuity indicator --- 1 bit*/
 			bytes = buff.read();
 			bitMSB = bytes;
 			bitMSB >>>= 7;
-			adpField += "Discontinuity indicator: " + (bitMSB == 1 ? "True" : "False") + "\n";
+			pw.println("Discontinuity indicator: " + (bitMSB == 1 ? "True" : "False") + "\n");
 			
 			/**Random Acess Indicator --- 1 bit*/
 			bitMSB = bytes;
 			bitMSB >>>= 6;
 			bitMSB = (bitMSB & 1);
-			adpField += "Random Acess Indicator" + (bitMSB == 1 ? "True" : "False") + "\n";
+			pw.println("Random Acess Indicator" + (bitMSB == 1 ? "True" : "False") + "\n");
 			
 			/**Elementary Stream Priority indicator --- 1 bit*/
 			bitMSB = bytes;
 			bitMSB >>>=5;
 			bitMSB = (bitMSB & 1);
-			adpField += "Elementary Stream Priority indicator: " + (bitMSB == 1 ? "True" : "False") + "\n";
+			pw.println("Elementary Stream Priority indicator: " + (bitMSB == 1 ? "True" : "False") + "\n");
 			
 			/**PCR flag --- 1 bit*/
 			bitMSB = bytes;
 			bitMSB >>>= 4;
 			pcrFlag = bitMSB = (bitMSB & 1);
-			adpField += "PCR flag: " + (bitMSB == 1 ? "True" : "False") + "\n";
+			pw.println("PCR flag: " + (bitMSB == 1 ? "True" : "False") + "\n");
 			
 			/**OPCR flag --- 1 bit*/
 			bitMSB = bytes;
 			bitMSB >>>= 3;
 			oPcrFlag = bitMSB = (bitMSB & 1);
-			adpField += "OPCR flag: " + (bitMSB == 1 ? "True" : "False") + "\n";
+			pw.println("OPCR flag: " + (bitMSB == 1 ? "True" : "False") + "\n");
 			
 			/**splicing point flag --- 1 bit*/
 			bitMSB = bytes;
 			bitMSB >>>= 2;
 			splicingPF = bitMSB = (bitMSB & 1);
-			adpField += "Splicing point flag: " + (bitMSB == 1 ? "True" : "False") + "\n";
+			pw.println("Splicing point flag: " + (bitMSB == 1 ? "True" : "False") + "\n");
 			
 			/**Transport private data flag --- 1 bit*/
 			bitMSB = bytes;
 			bitMSB >>>= 1;
 			privDataF = bitMSB = (bitMSB & 1);
-			adpField += "Transport private data flag: " + (bitMSB == 1 ? "True" : "False") + "\n";
+			pw.println("Transport private data flag: " + (bitMSB == 1 ? "True" : "False") + "\n");
 			
 			/**Adaptation Field extension flag --- 1 bit*/
 			bitMSB = bytes;
 			adpFieldExF = bitMSB = (bitMSB & 1);
-			adpField += "Adaptation Field extension flag: " + (bitMSB == 1 ? "True" : "False") + "\n";
+			pw.println("Adaptation Field extension flag: " + (bitMSB == 1 ? "True" : "False") + "\n");
 			
 			if(pcrFlag == 1){
 				/**Program clock reference base --- 33 bits*/
@@ -384,7 +371,7 @@ public class MpegReceptor {
 				aux = bytes;
 				aux >>>= 7;
 				bitMSB = (bitMSB | aux);
-				adpField += "Program clock reference base: " + bitMSB + "\n";
+				pw.println("Program clock reference base: " + bitMSB + "\n");
 				
 				/**Reserved --- 6 bits ---> Nao sera exibido*/
 				/**Program clock reference base extension --- 9 bits*/
@@ -393,7 +380,7 @@ public class MpegReceptor {
 				bytes = buff.read();
 				bitMSB <<=1;
 				bitMSB = (bitMSB | bytes);
-				adpField += "Program clock reference base extension: " + bitMSB + "\n";
+				pw.println("Program clock reference base extension: " + bitMSB + "\n");
 								
 			}
 			
@@ -406,7 +393,7 @@ public class MpegReceptor {
 					bitMSB = (bitMSB | bytes);
 					bitMSB <<= 8;
 				}
-				adpField += "Original Program clock reference base: " + bitMSB + "\n";
+				pw.println("Original Program clock reference base: " + bitMSB + "\n");
 				
 				/**Reserved --- 6 bits ---> Nao sera exibido*/
 				/**Program clock reference --- 9 bits*/
@@ -415,23 +402,23 @@ public class MpegReceptor {
 				bytes = buff.read();
 				bitMSB <<=1;
 				bitMSB = (bitMSB | bytes);
-				adpField += "Original Program clock reference: " + bitMSB + "\n";
+				pw.println("Original Program clock reference: " + bitMSB + "\n");
 			}
 			
 			if(splicingPF == 1){
 				/**Splicing count down --- 1 byte*/
 				bytes = buff.read();
-				adpField += "Splicing countdown: " + bytes + "\n";
+				pw.println("Splicing countdown: " + bytes + "\n");
 			}
 			
 			if(privDataF == 1){
 				/**Transport private data lenght --- 1 byte*/
 				bytes = buff.read();
-				adpField += "Transport private data lenght: " + bytes + "\n";
+				pw.println("Transport private data lenght: " + bytes + "\n");
 				
 				/**private data --- 1 byte*/
 				bytes = buff.read();
-				adpField += "Private data byte: " + bytes + "\n";
+				pw.println("Private data byte: " + bytes + "\n");
 			}
 			
 			if(adpFieldExF == 1){
@@ -439,32 +426,32 @@ public class MpegReceptor {
 				
 				/**Adaptation Field Extension Lenght --- 1 byte*/
 				bytes = buff.read();
-				adpField += "Adaptation Field Extension Lenght: " + bytes + "\n";
+				pw.println("Adaptation Field Extension Lenght: " + bytes + "\n");
 				
 				/**ltw flag --- 1 bit*/
 				bytes = buff.read();
 				bitMSB = bytes;
 				lwtF = bitMSB >>>= 7;
-				adpField += "lwt flag: " + (bitMSB == 1 ? "True" : "False") + "\n";
+				pw.println("lwt flag: " + (bitMSB == 1 ? "True" : "False") + "\n");
 				
 				/**Piecewise Rate flag --- 1 bit*/
 				bitMSB = bytes;
 				bitMSB >>>=6;
 				pWiseRateF = bitMSB = (bitMSB & 1);
-				adpField += "Piecewise rate flag: " + (bitMSB == 1 ? "True" : "False") + "\n";
+				pw.println("Piecewise rate flag: " + (bitMSB == 1 ? "True" : "False") + "\n");
 				
 				/**Seamless splice flag --- 1 bit*/
 				bitMSB = bytes;
 				bitMSB >>>=5;
 				sSpliceF = bitMSB = (bitMSB & 1);
-				adpField += "Seamless splice flag: " + (bitMSB == 1 ? "True" : "False") + "\n";
+				pw.println("Seamless splice flag: " + (bitMSB == 1 ? "True" : "False") + "\n");
 				/**Reserved --- 6 bits*/
 				
 				if(lwtF == 1){
 					/**lwt valid flag --- 1 bit*/
 					bytes = buff.read();
 					bitMSB >>>= 7;
-					adpField += "lwt valid flag: " + (bitMSB == 1 ? "True" : "False") + "\n";
+					pw.println("lwt valid flag: " + (bitMSB == 1 ? "True" : "False") + "\n");
 					
 					/**lwt offset --- 15 bits*/
 					bitMSB = bytes;
@@ -472,7 +459,7 @@ public class MpegReceptor {
 					bitMSB <<= 8;
 					bytes = buff.read();
 					bitMSB = (bitMSB | bytes);
-					adpField += "lwt offset: " + bitMSB + "\n";
+					pw.println("lwt offset: " + bitMSB + "\n");
 				}
 				
 				if(pWiseRateF == 1){
@@ -487,7 +474,7 @@ public class MpegReceptor {
 						bytes = buff.read();
 						bitMSB = (bitMSB | bytes);
 					}
-					adpField += "Piecewise rate: " + bitMSB + "\n";
+					pw.println("Piecewise rate: " + bitMSB + "\n");
 				}
 				
 				if(splicingPF == 1){
@@ -495,7 +482,7 @@ public class MpegReceptor {
 					bytes = buff.read();
 					bitMSB = bytes;
 					bitMSB >>>= 4;
-					adpField += "Splice type: " + bitMSB + "\n";
+						pw.println("Splice type: " + bitMSB + "\n");
 					
 					/**DTS next AU --- 3 bits ---> nao sera exibido*/
 					bitMSB = bytes;
@@ -510,10 +497,7 @@ public class MpegReceptor {
 				/**Reserved --- 1 byte ---> nao sera exibido*/
 				bytes = buff.read();
 			}
-			
 		}
-		
-		return adpField;
 	}
 
 }
